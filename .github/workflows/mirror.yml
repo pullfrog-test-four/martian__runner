@@ -1,0 +1,31 @@
+name: mirror
+run-name: ${{ inputs.name }}
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        type: string
+        description: Run name
+      spec:
+        type: string
+        description: JSON array of PR specs (see mirror.sh)
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        pr: ${{ fromJSON(inputs.spec) }}
+    name: ${{ matrix.pr.upstream }}#${{ matrix.pr.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash mirror.sh
+        env:
+          SPEC: ${{ toJSON(matrix.pr) }}
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
