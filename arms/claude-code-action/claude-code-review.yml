@@ -1,10 +1,11 @@
 name: Claude Code Review
 
 # the template `claude /install-github-app` installs (CODE_REVIEW_PLUGIN_WORKFLOW_CONTENT),
-# with four martian-bench changes: `--comment` so the plugin posts its findings (Martian's
+# with five martian-bench changes: `--comment` so the plugin posts its findings (Martian's
 # own `claude` arm ran `/code-review:code-review --comment`), the same model and effort
 # as the Pullfrog arm, the workflow token instead of the Claude GitHub App (not installed
-# on this org), and the action pinned to the SHA `@v1` resolved to on 2026-09-29.
+# on this org), the action pinned to the SHA `@v1` resolved to on 2026-09-29, and both
+# credential inputs, so the repo's one secret (API key or subscription) decides.
 
 on:
   pull_request:
@@ -30,6 +31,7 @@ jobs:
         uses: anthropics/claude-code-action@fd1c128679612beff4ca259c78021c506e8aa7a7
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
