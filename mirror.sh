@@ -54,6 +54,13 @@ rehead() {
     git commit-tree "refs/pr/head^{tree}" $parents
 }
 
+# GitHub now and then answers a push with a bare "remote rejected (failed)"; forcing makes a retry,
+# and re-staging a batch whose mirror failed part-way, overwrite whatever was left behind
+push() {
+  for _ in 1 2 3; do git push -qf "$@" && return; sleep 10; done
+  return 1
+}
+
 now=$(date +%s)
 jq -r '.targets[] | "\(.repo) \(.arm) \(.action_ref // "")"' <<<"$SPEC" | while read -r repo arm ref; do
   if [ -n "$ref" ]; then
@@ -75,9 +82,8 @@ jq -r '.targets[] | "\(.repo) \(.arm) \(.action_ref // "")"' <<<"$SPEC" | while 
   commit=$(git commit-tree "$tree" -p "$stripped" -m "Add $file")
   url="https://x-access-token:${PUSH_TOKEN}@github.com/$org/$repo.git"
   start=$(date +%s)
-  # forced, so re-staging a batch whose mirror failed part-way overwrites what it left behind
-  git push -qf "$url" "$stripped:refs/heads/$base_ref"
-  git push -qf "$url" "$head:refs/heads/pr-$number"
-  git push -qf "$url" "$commit:refs/heads/$base_ref"
+  push "$url" "$stripped:refs/heads/$base_ref"
+  push "$url" "$head:refs/heads/pr-$number"
+  push "$url" "$commit:refs/heads/$base_ref"
   echo "pushed $repo ($arm) in $(( $(date +%s) - start ))s"
 done
