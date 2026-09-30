@@ -9,7 +9,9 @@ name: Claude Code Review
 # would leak into the Pullfrog arm's workflow env); the full transcript in the log; and the
 # plugin's own `allowed-tools` passed as --allowedTools, because in agent mode the action
 # installs the inline-comment MCP server only when --allowedTools names it (without it the
-# plugin finds bugs but every attempt to post is denied).
+# plugin finds bugs but every attempt to post is denied); and background tasks disabled,
+# because the action ends the run at the first `result` while the plugin's background
+# review agents are still running (anthropics/claude-code-action#1499, #1646, #1852).
 
 on:
   pull_request:
@@ -33,6 +35,8 @@ jobs:
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@fd1c128679612beff4ca259c78021c506e8aa7a7
+        env:
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
         with:
           claude_code_oauth_token: ${{ secrets.CONTROL_CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
