@@ -7,7 +7,10 @@
 #   2. add the arm's workflow file, in its own small push so GitHub registers it —
 #      a huge initial push can skip workflow registration entirely (seen on sentry)
 # the PR diff is merge-base...head, so neither commit is part of what gets reviewed.
-# SPEC: {"upstream","number","base_ref","base_sha","org","targets":[{"repo","arm"}]}
+# `from_merge_base` starts the base branch at merge-base(base_sha, head) instead: the diff is
+# identical, but a PR that conflicts with its upstream base becomes mergeable, and GitHub
+# creates no `pull_request` runs for a conflicting PR.
+# SPEC: {"upstream","number","base_ref","base_sha","org","from_merge_base"?,"targets":[{"repo","arm"}]}
 set -euo pipefail
 
 upstream=$(jq -r .upstream <<<"$SPEC")
@@ -24,6 +27,10 @@ cd up
 git remote add origin "https://github.com/$upstream.git"
 git fetch -q --no-tags origin "+refs/pull/$number/head:refs/pr/head" "$base_sha:refs/pr/base"
 echo "fetched: $(git count-objects -vH | grep size-pack)"
+if [ "$(jq -r '.from_merge_base // false' <<<"$SPEC")" = true ]; then
+  base_sha=$(git merge-base refs/pr/base refs/pr/head)
+  echo "base from merge-base: $base_sha"
+fi
 
 export GIT_INDEX_FILE="$PWD/index"
 git read-tree "$base_sha"
