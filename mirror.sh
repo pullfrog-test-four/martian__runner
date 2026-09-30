@@ -75,8 +75,9 @@ jq -r '.targets[] | "\(.repo) \(.arm) \(.action_ref // "")"' <<<"$SPEC" | while 
   commit=$(git commit-tree "$tree" -p "$stripped" -m "Add $file")
   url="https://x-access-token:${PUSH_TOKEN}@github.com/$org/$repo.git"
   start=$(date +%s)
-  git push -q "$url" "$stripped:refs/heads/$base_ref"
-  git push -q "$url" "$head:refs/heads/pr-$number"
-  git push -q "$url" "$commit:refs/heads/$base_ref"
+  # forced, so re-staging a batch whose mirror failed part-way overwrites what it left behind
+  git push -qf "$url" "$stripped:refs/heads/$base_ref"
+  git push -qf "$url" "$head:refs/heads/pr-$number"
+  git push -qf "$url" "$commit:refs/heads/$base_ref"
   echo "pushed $repo ($arm) in $(( $(date +%s) - start ))s"
 done
